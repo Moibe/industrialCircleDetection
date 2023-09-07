@@ -20,28 +20,26 @@ while True:
     # Aplica un desenfoque para reducir el ruido
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # Encuentra los contornos en la imagen
-    contours, _ = cv2.findContours(blurred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Detecta bordes en la imagen
+    edges = cv2.Canny(blurred, 50, 150)
 
-    # Encuentra la elipse más grande
-    largest_ellipse = None
-    max_area = 0
+    # Encuentra contornos en los bordes
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filtra contornos que pueden ser medias elipses
+    ellipse_contours = []
 
     for contour in contours:
         if len(contour) >= 5:
             ellipse = cv2.fitEllipse(contour)
-            area = ellipse[1][0] * ellipse[1][1] * np.pi  # Área de la elipse
+            if 0 < ellipse[2] < 180:  # Filtra medias elipses (0 < ángulo < 180 grados)
+                ellipse_contours.append(contour)
 
-            if area > max_area:
-                max_area = area
-                largest_ellipse = ellipse
+    # Dibuja las medias elipses encontradas
+    cv2.drawContours(frame, ellipse_contours, -1, (0, 0, 255), 2)
 
-    if largest_ellipse is not None:
-        # Dibuja la elipse más grande
-        cv2.ellipse(frame, largest_ellipse, (0, 0, 255), 2)
-
-    # Muestra el frame con la elipse más grande en una ventana
-    cv2.imshow('Video con la elipse más grande detectada', frame)
+    # Muestra el frame con las medias elipses en una ventana
+    cv2.imshow('Video con medias elipses detectadas', frame)
 
     # Espera una tecla y verifica si 'q' (o cualquier tecla que desees) es presionada
     key = cv2.waitKey(1) & 0xFF
@@ -50,4 +48,5 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+
 
